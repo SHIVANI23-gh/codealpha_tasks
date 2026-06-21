@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraWeather - Premium Weather Dashboard</title>
+    <!-- FontAwesome Vector Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN for interactive graphing -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom styling design system -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-sunny">
+    <!-- Ambient canvas for weather particle effects (rain, snow, dust, etc.) -->
+    <canvas id="ambient-canvas"></canvas>
+
+    <!-- Glowing backdrop blurred orbs -->
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+
+    <div class="app-container">
+        <!-- ==========================================
+             LEFT SIDEBAR PANEL
+             ========================================== -->
+        <aside class="sidebar glass-panel">
+            <!-- Brand Logotype -->
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <i class="fa-solid fa-wind" style="font-size: 1.8rem; color: var(--accent-color);"></i>
+                <h2 style="font-family: var(--font-heading); font-weight: 800; font-size: 1.4rem; letter-spacing: -0.5px;">AURA<span style="color: var(--accent-color)">WEATHER</span></h2>
+            </div>
+
+            <!-- Search Area -->
+            <div class="search-container">
+                <form id="search-form" onsubmit="event.preventDefault();">
+                    <div class="search-input-wrapper">
+                        <i class="fa-solid fa-magnifying-glass" style="color: var(--text-secondary)"></i>
+                        <input type="text" id="city-search-input" class="search-input" placeholder="Search city (e.g. Tokyo)..." autocomplete="off">
+                        <button type="submit" class="search-btn" aria-label="Search"><i class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Settings Controls -->
+            <div class="settings-widget">
+                <div>
+                    <h3 class="section-title"><i class="fa-solid fa-temperature-half"></i> Temperature Unit</h3>
+                    <div class="toggle-group">
+                        <button type="button" id="unit-celsius" class="toggle-option active">Celsius (°C)</button>
+                        <button type="button" id="unit-fahrenheit" class="toggle-option">Fahrenheit (°F)</button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="section-title"><i class="fa-solid fa-database"></i> Data Engine</h3>
+                    <div class="toggle-group">
+                        <button type="button" id="source-simulated" class="toggle-option active">Simulated</button>
+                        <button type="button" id="source-live" class="toggle-option">Live API</button>
+                    </div>
+                </div>
+
+                <div id="api-key-container" class="key-input-container">
+                    <h3 class="section-title"><i class="fa-solid fa-key"></i> OpenWeatherMap Key</h3>
+                    <input type="password" id="api-key-input" class="key-input" placeholder="Paste your API key here...">
+                </div>
+            </div>
+
+            <!-- Search History section -->
+            <div class="history-section">
+                <h3 class="section-title"><i class="fa-solid fa-clock-rotate-left"></i> History</h3>
+                <div id="search-history-list" class="history-list">
+                    <!-- Dynamic history chips will be rendered here -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- ==========================================
+             RIGHT MAIN DASHBOARD PANEL
+             ========================================== -->
+        <main class="main-dashboard">
+            <!-- Top Status Bar -->
+            <header class="dashboard-header">
+                <div class="location-info">
+                    <h1 id="active-city-name">Tokyo</h1>
+                    <p id="active-date-time">Sunday, 21 June 2026 | 07:43 AM</p>
+                </div>
+                <div id="data-engine-banner" class="source-banner simulated">
+                    <div class="dot"></div>
+                    <span id="data-engine-text">Simulated Engine</span>
+                </div>
+            </header>
+
+            <!-- Mid-grid layout: Hero Card & Chart Widget -->
+            <section class="grid-layout">
+                <!-- Current Weather Card -->
+                <div class="current-weather-hero glass-panel" style="position: relative;">
+                    <!-- Loading indicator for weather loads -->
+                    <div id="hero-loader" class="loading-overlay">
+                        <div class="spinner"></div>
+                        <p style="font-weight: 500; font-size: 0.9rem;">Fetching weather data...</p>
+                    </div>
+
+                    <div class="weather-hero-main">
+                        <div class="temp-hero">
+                            <div class="temp-value-wrapper">
+                                <span id="hero-temp-val" class="temp-val">24</span>
+                                <span id="hero-temp-unit" class="temp-unit">°C</span>
+                            </div>
+                            <div id="hero-weather-desc" class="weather-desc-summary">Clear Sky</div>
+                            <div id="hero-feels-like" class="feels-like">Feels like 25°C</div>
+                        </div>
+
+                        <!-- Dynamic SVG Icon Container -->
+                        <div id="hero-weather-icon" class="weather-icon-hero-container">
+                            <!-- Weather Animation SVG will be injected here -->
+                        </div>
+                    </div>
+
+                    <!-- Footer Detailed Metrics -->
+                    <div class="weather-hero-footer">
+                        <div class="footer-metric">
+                            <div class="metric-icon-box">
+                                <i class="fa-solid fa-wind"></i>
+                            </div>
+                            <div class="metric-data">
+                                <span class="metric-label">Wind Speed</span>
+                                <span id="hero-wind-speed" class="metric-value">12 km/h</span>
+                            </div>
+                        </div>
+
+                        <div class="footer-metric">
+                            <div class="metric-icon-box">
+                                <i class="fa-solid fa-droplet"></i>
+                            </div>
+                            <div class="metric-data">
+                                <span class="metric-label">Humidity</span>
+                                <span id="hero-humidity" class="metric-value">64%</span>
+                            </div>
+                        </div>
+
+                        <div class="footer-metric">
+                            <div class="metric-icon-box">
+                                <i class="fa-solid fa-cloud-showers-water"></i>
+                            </div>
+                            <div class="metric-data">
+                                <span class="metric-label">Rain Chance</span>
+                                <span id="hero-precipitation" class="metric-value">5%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Temperature Trend Graph Panel -->
+                <div class="trend-panel glass-panel">
+                    <div class="chart-header">
+                        <span class="chart-title">24-Hour Weather Outlook</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="weather-trend-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Middle grid: UV Index, Air Quality, pressure etc. -->
+            <section class="indices-panel">
+                <div class="index-card glass-panel">
+                    <i class="fa-solid fa-sun"></i>
+                    <span class="index-label">UV Index</span>
+                    <span id="idx-uv" class="index-value">3.2</span>
+                    <span id="idx-uv-desc" class="index-desc">Moderate</span>
+                </div>
+                <div class="index-card glass-panel">
+                    <i class="fa-solid fa-lungs"></i>
+                    <span class="index-label">Air Quality</span>
+                    <span id="idx-aqi" class="index-value">42</span>
+                    <span id="idx-aqi-desc" class="index-desc">Excellent</span>
+                </div>
+                <div class="index-card glass-panel">
+                    <i class="fa-solid fa-compass"></i>
+                    <span class="index-label">Pressure</span>
+                    <span id="idx-pressure" class="index-value">1013 hPa</span>
+                    <span id="idx-pressure-desc" class="index-desc">Standard</span>
+                </div>
+                <div class="index-card glass-panel">
+                    <i class="fa-solid fa-eye"></i>
+                    <span class="index-label">Visibility</span>
+                    <span id="idx-visibility" class="index-value">10 km</span>
+                    <span id="idx-visibility-desc" class="index-desc">Perfect</span>
+                </div>
+            </section>
+
+            <!-- 5-Day Extended Forecast Panel -->
+            <section class="forecast-panel">
+                <h3 class="forecast-header">5-Day Extended Forecast</h3>
+                <div id="forecast-cards-container" class="forecast-grid">
+                    <!-- Dynamic forecast cards will be injected here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Error Alerts System Overlay -->
+    <div id="error-alert" class="error-toast">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span id="error-message">City name not found! Please check spelling.</span>
+    </div>
+
+    <!-- main app scripts -->
+    <script src="app.js"></script>
+</body>
+</html>
